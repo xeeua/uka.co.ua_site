@@ -55,28 +55,55 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Contact form — no backend, opens a pre-filled mailto to the association's inbox
+  // Contact form — sends via /api/contact (Cloudflare Email Routing Worker);
+  // falls back to a pre-filled mailto if the API isn't reachable (e.g. local preview).
   const CONTACT_EMAIL = 'uka.org.ua@gmail.com';
   const form = document.querySelector('#contact-form');
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = new FormData(form);
-      const lines = [
-        `ПІБ: ${data.get('fullname') || ''}`,
-        `Посада: ${data.get('position') || ''}`,
-        `Підприємство: ${data.get('company') || ''}`,
-        `Місто: ${data.get('city') || ''}`,
-        `Телефон: ${data.get('phone') || ''}`,
-        `E-mail: ${data.get('email') || '-'}`,
-        '',
-        data.get('message') || ''
-      ];
-      const subject = encodeURIComponent(`Заявка з сайту УКА — ${data.get('fullname') || ''}`);
-      const body = encodeURIComponent(lines.join('\n'));
-      window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-      form.style.display = 'none';
-      document.querySelector('.form-success').classList.add('visible');
+      const payload = {
+        fullname: data.get('fullname') || '',
+        position: data.get('position') || '',
+        company: data.get('company') || '',
+        city: data.get('city') || '',
+        phone: data.get('phone') || '',
+        email: data.get('email') || '',
+        message: data.get('message') || ''
+      };
+
+      const showSuccess = (text) => {
+        form.style.display = 'none';
+        const successEl = document.querySelector('.form-success');
+        successEl.textContent = text;
+        successEl.classList.add('visible');
+      };
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('bad_status');
+        showSuccess(`Дякуємо! Заявку надіслано на ${CONTACT_EMAIL}.`);
+      } catch (err) {
+        const lines = [
+          `ПІБ: ${payload.fullname}`,
+          `Посада: ${payload.position}`,
+          `Підприємство: ${payload.company}`,
+          `Місто: ${payload.city}`,
+          `Телефон: ${payload.phone}`,
+          `E-mail: ${payload.email || '-'}`,
+          '',
+          payload.message
+        ];
+        const subject = encodeURIComponent(`Заявка з сайту УКА — ${payload.fullname}`);
+        const body = encodeURIComponent(lines.join('\n'));
+        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+        showSuccess(`Не вдалось надіслати автоматично — відкрили лист на ${CONTACT_EMAIL}, натисніть «Надіслати».`);
+      }
     });
   }
 
