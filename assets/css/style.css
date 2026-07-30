@@ -277,6 +277,21 @@ section { padding: 70px 0; }
 .partner-card .name { font-weight: 700; margin-bottom: 4px; }
 .partner-card .desc { font-size: 13px; color: var(--text-muted); margin: 0; }
 
+.venue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+.venue-grid img {
+  width: 100%;
+  aspect-ratio: 1.6;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--navy);
+}
+
 /* ===== Brands table ===== */
 .brands-toolbar {
   display: flex;
